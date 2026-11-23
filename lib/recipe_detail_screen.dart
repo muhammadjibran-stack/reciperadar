@@ -1,15 +1,54 @@
 import 'package:flutter/material.dart';
 import 'recipe_model.dart';
 
-class RecipeDetailScreen extends StatelessWidget {
+class RecipeDetailScreen extends StatefulWidget {
   final Recipe recipe;
+  final bool isFavourite;
+  final VoidCallback? onFavouriteToggle;
 
-  const RecipeDetailScreen({super.key, required this.recipe});
+  const RecipeDetailScreen({
+    super.key,
+    required this.recipe,
+    this.isFavourite = false,
+    this.onFavouriteToggle,
+  });
+
+  @override
+  State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
+}
+
+class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
+  late bool _isFav;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFav = widget.isFavourite;
+  }
+
+  void _handleToggleFavourite() {
+    setState(() {
+      _isFav = !_isFav;
+    });
+    widget.onFavouriteToggle?.call();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(recipe.name)),
+      appBar: AppBar(
+        title: Text(widget.recipe.name),
+        actions: [
+          IconButton(
+            onPressed: _handleToggleFavourite,
+            icon: Icon(
+              _isFav ? Icons.favorite : Icons.favorite_border,
+              color: _isFav ? Colors.red : null,
+            ),
+            tooltip: _isFav ? 'Remove from favourites' : 'Add to favourites',
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -18,7 +57,7 @@ class RecipeDetailScreen extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.network(
-                recipe.imageUrl,
+                widget.recipe.imageUrl,
                 width: double.infinity,
                 height: 240,
                 fit: BoxFit.cover,
@@ -35,7 +74,7 @@ class RecipeDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              recipe.name,
+              widget.recipe.name,
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
@@ -45,17 +84,17 @@ class RecipeDetailScreen extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                Chip(label: Text(recipe.category)),
-                Chip(label: Text(recipe.area)),
+                Chip(label: Text(widget.recipe.category)),
+                Chip(label: Text(widget.recipe.area)),
               ],
             ),
             const SizedBox(height: 20),
             const Text(
               'Ingredients',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: .bold),
             ),
             const SizedBox(height: 8),
-            ...recipe.ingredients.map(
+            ...widget.recipe.ingredients.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 6.0),
                 child: Row(
@@ -73,7 +112,10 @@ class RecipeDetailScreen extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(recipe.instructions, style: const TextStyle(height: 1.5)),
+            Text(
+              widget.recipe.instructions,
+              style: const TextStyle(height: 1.5),
+            ),
           ],
         ),
       ),

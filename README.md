@@ -16,6 +16,23 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference. -->
 
-# RecipeRadar (Week 1)
+<!-- # RecipeRadar (Week 1)
 
-Flutter recipe app built with hardcoded sample recipes, HomeScreen grid, RecipeCard widget, and RecipeDetailScreen.
+Flutter recipe app built with hardcoded sample recipes, HomeScreen grid, RecipeCard widget, and RecipeDetailScreen. -->
+
+# RecipeRadar
+
+Flutter recipe app built for the App Developer internship (Week 2: Navigation, Search & Favourites).
+
+## Week 2 Features
+
+- Tap any recipe card to open `RecipeDetailScreen` with the selected recipe.
+- Search recipes live by name using a top search bar, clear to show all recipes, or show a message when no match is found.
+- Toggle favourites with the heart icon and switch between **Home** and **Favourites** using a bottom navigation bar.
+
+## Run Locally
+
+```bash
+flutter pub get
+flutter run -d chrome
+```

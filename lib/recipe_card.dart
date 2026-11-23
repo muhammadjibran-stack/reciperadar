@@ -3,9 +3,17 @@ import 'recipe_model.dart';
 
 class RecipeCard extends StatelessWidget {
   final Recipe recipe;
+  final bool isFavourite;
   final VoidCallback? onTap;
+  final VoidCallback? onFavouriteToggle;
 
-  const RecipeCard({super.key, required this.recipe, this.onTap});
+  const RecipeCard({
+    super.key,
+    required this.recipe,
+    this.isFavourite = false,
+    this.onTap,
+    this.onFavouriteToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -38,15 +46,34 @@ class RecipeCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                recipe.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8.0,
+                vertical: 6.0,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      recipe.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: onFavouriteToggle,
+                    icon: Icon(
+                      isFavourite ? Icons.favorite : Icons.favorite_border,
+                      color: isFavourite ? Colors.red : Colors.grey,
+                    ),
+                    tooltip: isFavourite
+                        ? 'Remove from favourites'
+                        : 'Add to favourites',
+                  ),
+                ],
               ),
             ),
           ],

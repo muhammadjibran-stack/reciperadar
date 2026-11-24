@@ -35,6 +35,11 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
   final Set<String> _favouriteIds = <String>{};
+  final Map<String, Recipe> _knownRecipes = <String, Recipe>{};
+
+  void _cacheRecipe(Recipe recipe) {
+    _knownRecipes[recipe.id] = recipe;
+  }
 
   void _toggleFavourite(String recipeId) {
     setState(() {
@@ -47,8 +52,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   Widget _buildFavouritesTab(BuildContext context) {
-    final List<Recipe> favouriteRecipes = sampleRecipes
-        .where((recipe) => _favouriteIds.contains(recipe.id))
+    final List<Recipe> favouriteRecipes = _favouriteIds
+        .map((id) => _knownRecipes[id])
+        .whereType<Recipe>()
         .toList();
 
     final double width = MediaQuery.of(context).size.width;
@@ -108,6 +114,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       HomeScreen(
         favouriteIds: _favouriteIds,
         onToggleFavourite: _toggleFavourite,
+        onRecipesLoaded: _cacheRecipe,
       ),
       _buildFavouritesTab(context),
     ];

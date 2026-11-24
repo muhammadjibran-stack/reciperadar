@@ -20,7 +20,7 @@ samples, guidance on mobile development, and a full API reference. -->
 
 Flutter recipe app built with hardcoded sample recipes, HomeScreen grid, RecipeCard widget, and RecipeDetailScreen. -->
 
-# RecipeRadar
+<!-- # RecipeRadar
 
 Flutter recipe app built for the App Developer internship (Week 2: Navigation, Search & Favourites).
 
@@ -35,4 +35,19 @@ Flutter recipe app built for the App Developer internship (Week 2: Navigation, S
 ```bash
 flutter pub get
 flutter run -d chrome
-```
+``` -->
+
+# RecipeRadar
+
+Flutter recipe app built for the App Developer internship (Week 3: Real Recipes from a Public API).
+
+## Week 3 Features
+
+- Fetched real recipes from TheMealDB public API using the `http` package.
+- Parsed JSON into `Recipe` models with ingredients (`strIngredient1`–`strIngredient20`) using `FutureBuilder`.
+- Added search submission, empty-state handling, error handling with a Retry button, recipe detail navigation, and favourites.
+
+## Run Locally
+
+flutter pub get
+flutter run -d chrome

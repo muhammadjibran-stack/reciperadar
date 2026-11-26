@@ -40,4 +40,32 @@ class Recipe {
       instructions: (json['strInstructions'] ?? '').toString(),
     );
   }
+
+  Map<String, dynamic> toStorageJson() {
+    return <String, dynamic>{
+      'id': id,
+      'name': name,
+      'category': category,
+      'area': area,
+      'image': imageUrl,
+      'ingredients': ingredients,
+      'instructions': instructions,
+    };
+  }
+
+  factory Recipe.fromStorageJson(Map<String, dynamic> json) {
+    final List<dynamic> rawIngredients =
+        json['ingredients'] as List<dynamic>? ?? const <dynamic>[];
+    return Recipe(
+      id: (json['id'] ?? '').toString(),
+      name: (json['name'] ?? 'Unknown Recipe').toString(),
+      category: (json['category'] ?? 'General').toString(),
+      area: (json['area'] ?? 'International').toString(),
+      imageUrl: (json['image'] ?? '').toString(),
+      ingredients: rawIngredients
+          .map((dynamic ingredient) => ingredient.toString())
+          .toList(),
+      instructions: (json['instructions'] ?? '').toString(),
+    );
+  }
 }

@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'favourites_provider.dart';
 import 'recipe_model.dart';
 
 class RecipeCard extends StatelessWidget {
   final Recipe recipe;
-  final bool isFavourite;
   final VoidCallback? onTap;
-  final VoidCallback? onFavouriteToggle;
 
   const RecipeCard({
     super.key,
     required this.recipe,
-    this.isFavourite = false,
     this.onTap,
-    this.onFavouriteToggle,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool isFavourite = context.watch<FavouritesProvider>().isFavourite(
+      recipe.id,
+    );
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -34,12 +38,39 @@ class RecipeCard extends StatelessWidget {
                   recipe.imageUrl,
                   height: 140,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
+                  loadingBuilder: (
+                    BuildContext context,
+                    Widget child,
+                    ImageChunkEvent? loadingProgress,
+                  ) {
+                    if (loadingProgress == null) {
+                      return child;
+                    }
+                    return SizedBox(
+                      height: 140,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (
+                    BuildContext context,
+                    Object error,
+                    StackTrace? stackTrace,
+                  ) {
                     return Container(
                       height: 140,
-                      color: Colors.grey.shade300,
+                      color: colorScheme.surfaceContainerHighest,
                       alignment: Alignment.center,
-                      child: const Icon(Icons.broken_image),
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     );
                   },
                 ),
@@ -64,7 +95,11 @@ class RecipeCard extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: onFavouriteToggle,
+                    onPressed: () {
+                      context.read<FavouritesProvider>().toggleFavourite(
+                        recipe,
+                      );
+                    },
                     icon: Icon(
                       isFavourite ? Icons.favorite : Icons.favorite_border,
                       color: isFavourite ? Colors.red : Colors.grey,

@@ -1,16 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'favourites_provider.dart';
+import 'recipe_api.dart';
 import 'recipe_model.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
   final Recipe recipe;
-  final bool isFavourite;
-  final VoidCallback? onFavouriteToggle;
 
   const RecipeDetailScreen({
     super.key,
     required this.recipe,
-    this.isFavourite = false,
-    this.onFavouriteToggle,
   });
 
   @override
@@ -18,34 +20,63 @@ class RecipeDetailScreen extends StatefulWidget {
 }
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
-  late bool _isFav;
+  late Recipe _recipe;
 
   @override
   void initState() {
     super.initState();
-    _isFav = widget.isFavourite;
+    _recipe = widget.recipe;
+
+    if (_recipe.instructions.isEmpty && _recipe.id.isNotEmpty) {
+      unawaited(_loadFullDetails());
+    }
   }
 
-  void _handleToggleFavourite() {
-    setState(() {
-      _isFav = !_isFav;
-    });
-    widget.onFavouriteToggle?.call();
+  Future<void> _loadFullDetails() async {
+    try {
+      final Recipe fullRecipe = await RecipeApi().fetchRecipeById(
+        widget.recipe.id,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _recipe = fullRecipe;
+      });
+
+      final FavouritesProvider favouritesProvider = context
+          .read<FavouritesProvider>();
+      if (favouritesProvider.isFavourite(fullRecipe.id)) {
+        await favouritesProvider.cacheRecipeDetails(fullRecipe);
+      }
+    } catch (_) {
+      debugPrint('Full recipe details are unavailable right now.');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isFavourite = context.watch<FavouritesProvider>().isFavourite(
+      _recipe.id,
+    );
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.recipe.name),
+        title: Text(_recipe.name),
         actions: [
           IconButton(
-            onPressed: _handleToggleFavourite,
+            onPressed: () {
+              context.read<FavouritesProvider>().toggleFavourite(_recipe);
+            },
             icon: Icon(
-              _isFav ? Icons.favorite : Icons.favorite_border,
-              color: _isFav ? Colors.red : null,
+              isFavourite ? Icons.favorite : Icons.favorite_border,
+              color: isFavourite ? Colors.red : null,
             ),
-            tooltip: _isFav ? 'Remove from favourites' : 'Add to favourites',
+            tooltip: isFavourite
+                ? 'Remove from favourites'
+                : 'Add to favourites',
           ),
         ],
       ),
@@ -57,24 +88,53 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.network(
-                widget.recipe.imageUrl,
+                _recipe.imageUrl,
                 width: double.infinity,
                 height: 240,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
+                loadingBuilder: (
+                  BuildContext context,
+                  Widget child,
+                  ImageChunkEvent? loadingProgress,
+                ) {
+                  if (loadingProgress == null) {
+                    return child;
+                  }
+                  return SizedBox(
+                    width: double.infinity,
+                    height: 240,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (
+                  BuildContext context,
+                  Object error,
+                  StackTrace? stackTrace,
+                ) {
                   return Container(
                     width: double.infinity,
                     height: 240,
-                    color: Colors.grey.shade300,
+                    color: colorScheme.surfaceContainerHighest,
                     alignment: Alignment.center,
-                    child: const Icon(Icons.broken_image, size: 40),
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      size: 40,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   );
                 },
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              widget.recipe.name,
+              _recipe.name,
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
@@ -84,18 +144,20 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                Chip(label: Text(widget.recipe.category)),
-                Chip(label: Text(widget.recipe.area)),
+                Chip(label: Text(_recipe.category)),
+                Chip(label: Text(_recipe.area)),
               ],
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Ingredients',
-              style: TextStyle(fontSize: 18, fontWeight: .bold),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
-            ...widget.recipe.ingredients.map(
-              (item) => Padding(
+            ..._recipe.ingredients.map(
+              (String item) => Padding(
                 padding: const EdgeInsets.only(bottom: 6.0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,13 +169,17 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Instructions',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
-              widget.recipe.instructions,
+              _recipe.instructions.isEmpty
+                  ? 'Instructions are unavailable offline. Reconnect to load full details.'
+                  : _recipe.instructions,
               style: const TextStyle(height: 1.5),
             ),
           ],

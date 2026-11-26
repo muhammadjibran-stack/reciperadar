@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'favourites_provider.dart';
 import 'home_screen.dart';
 import 'recipe_card.dart';
 import 'recipe_detail_screen.dart';
@@ -13,14 +16,26 @@ class RecipeRadarApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'RecipeRadar',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-        useMaterial3: true,
+    return ChangeNotifierProvider<FavouritesProvider>(
+      create: (_) => FavouritesProvider()..loadFavourites(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'RecipeRadar',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
+          useMaterial3: true,
+        ),
+        darkTheme: ThemeData(
+          brightness: Brightness.dark,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.deepOrange,
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
+        ),
+        themeMode: ThemeMode.system,
+        home: const MainNavigationScreen(),
       ),
-      home: const MainNavigationScreen(),
     );
   }
 }
@@ -34,29 +49,11 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
-  final Set<String> _favouriteIds = <String>{};
-  final Map<String, Recipe> _knownRecipes = <String, Recipe>{};
-
-  void _cacheRecipe(Recipe recipe) {
-    _knownRecipes[recipe.id] = recipe;
-  }
-
-  void _toggleFavourite(String recipeId) {
-    setState(() {
-      if (_favouriteIds.contains(recipeId)) {
-        _favouriteIds.remove(recipeId);
-      } else {
-        _favouriteIds.add(recipeId);
-      }
-    });
-  }
 
   Widget _buildFavouritesTab(BuildContext context) {
-    final List<Recipe> favouriteRecipes = _favouriteIds
-        .map((id) => _knownRecipes[id])
-        .whereType<Recipe>()
-        .toList();
-
+    final List<Recipe> favouriteRecipes = context
+        .watch<FavouritesProvider>()
+        .favourites;
     final double width = MediaQuery.of(context).size.width;
     final int crossAxisCount = width >= 900 ? 4 : 2;
 
@@ -64,9 +61,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       appBar: AppBar(title: const Text('Favourites')),
       body: favouriteRecipes.isEmpty
           ? const Center(
-              child: Text(
-                'No favourite recipes yet.',
-                style: TextStyle(fontSize: 16),
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'No favourites saved yet. Tap the heart on a recipe to add it.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16),
+                ),
               ),
             )
           : Padding(
@@ -79,27 +80,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   mainAxisSpacing: 12,
                   childAspectRatio: 0.85,
                 ),
-                itemBuilder: (context, index) {
+                itemBuilder: (BuildContext context, int index) {
                   final Recipe recipe = favouriteRecipes[index];
                   return RecipeCard(
                     recipe: recipe,
-                    isFavourite: true,
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => RecipeDetailScreen(
-                            recipe: recipe,
-                            isFavourite: _favouriteIds.contains(recipe.id),
-                            onFavouriteToggle: () {
-                              _toggleFavourite(recipe.id);
-                            },
-                          ),
+                        MaterialPageRoute<void>(
+                          builder: (_) => RecipeDetailScreen(recipe: recipe),
                         ),
                       );
-                    },
-                    onFavouriteToggle: () {
-                      _toggleFavourite(recipe.id);
                     },
                   );
                 },
@@ -111,11 +102,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> screens = <Widget>[
-      HomeScreen(
-        favouriteIds: _favouriteIds,
-        onToggleFavourite: _toggleFavourite,
-        onRecipesLoaded: _cacheRecipe,
-      ),
+      const HomeScreen(),
       _buildFavouritesTab(context),
     ];
 

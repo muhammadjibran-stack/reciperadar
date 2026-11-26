@@ -1,20 +1,12 @@
 import 'package:flutter/material.dart';
+
 import 'recipe_api.dart';
 import 'recipe_card.dart';
 import 'recipe_detail_screen.dart';
 import 'recipe_model.dart';
 
 class HomeScreen extends StatefulWidget {
-  final Set<String> favouriteIds;
-  final ValueChanged<String> onToggleFavourite;
-  final ValueChanged<Recipe> onRecipesLoaded;
-
-  const HomeScreen({
-    super.key,
-    required this.favouriteIds,
-    required this.onToggleFavourite,
-    required this.onRecipesLoaded,
-  });
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -27,28 +19,19 @@ class _HomeScreenState extends State<HomeScreen> {
   );
 
   late Future<List<Recipe>> _recipesFuture;
-  String _currentQuery = 'chicken';
 
   @override
   void initState() {
     super.initState();
-    _recipesFuture = _fetchAndCacheRecipes(_currentQuery);
-  }
-
-  Future<List<Recipe>> _fetchAndCacheRecipes(String query) async {
-    final String finalQuery = query.trim().isEmpty ? 'chicken' : query.trim();
-    final List<Recipe> results = await _recipeApi.searchRecipes(finalQuery);
-    for (final Recipe recipe in results) {
-      widget.onRecipesLoaded(recipe);
-    }
-    return results;
+    _recipesFuture = _recipeApi.searchRecipes('chicken');
   }
 
   void _runSearch() {
     final String query = _searchController.text.trim();
     setState(() {
-      _currentQuery = query.isEmpty ? 'chicken' : query;
-      _recipesFuture = _fetchAndCacheRecipes(_currentQuery);
+      _recipesFuture = _recipeApi.searchRecipes(
+        query.isEmpty ? 'chicken' : query,
+      );
     });
   }
 
@@ -96,7 +79,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: FutureBuilder<List<Recipe>>(
               future: _recipesFuture,
-              builder: (context, snapshot) {
+              builder: (
+                BuildContext context,
+                AsyncSnapshot<List<Recipe>> snapshot,
+              ) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -144,33 +130,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisSpacing: 12,
                       childAspectRatio: 0.85,
                     ),
-                    itemBuilder: (context, index) {
+                    itemBuilder: (
+                      BuildContext context,
+                      int index,
+                    ) {
                       final Recipe recipe = recipes[index];
-                      final bool isFav = widget.favouriteIds.contains(
-                        recipe.id,
-                      );
-
                       return RecipeCard(
                         recipe: recipe,
-                        isFavourite: isFav,
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => RecipeDetailScreen(
-                                recipe: recipe,
-                                isFavourite: widget.favouriteIds.contains(
-                                  recipe.id,
-                                ),
-                                onFavouriteToggle: () {
-                                  widget.onToggleFavourite(recipe.id);
-                                },
-                              ),
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  RecipeDetailScreen(recipe: recipe),
                             ),
                           );
-                        },
-                        onFavouriteToggle: () {
-                          widget.onToggleFavourite(recipe.id);
                         },
                       );
                     },
